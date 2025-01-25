@@ -47,6 +47,9 @@ export const createJob = async (req, res) => {
       });
     }
     const companydet = await Company.findById(company);
+    if (!companydet) {
+      return res.status(404).json({ message: "Company not found" });
+    }
     const job = await Job.create({
       title,
       description,
@@ -126,11 +129,11 @@ export const getAdminJobs = async (req, res) => {
 
 export const deleteJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findByIdAndDelete(req.params.id);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
-    await job.remove();
+
     res.status(200).json({ message: "Job deleted successfully" });
   } catch (err) {
     console.log(err);

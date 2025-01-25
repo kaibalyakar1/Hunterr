@@ -21,3 +21,6 @@ const applicationSchema = new mongoose.Schema({
     default: "pending",
   },
 });
+
+const Application = mongoose.model("Application", applicationSchema);
+export default Application;
