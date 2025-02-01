@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import User from "../models/user.model.js";
+import getDataUri from "../utils/dataUri.js";
+import cloudinary from "../utils/cloudinary.js";
 
 dotenv.config();
 
@@ -9,7 +11,7 @@ dotenv.config();
 export const registerUser = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
-
+    console.log(req.body);
     if (!name || !email || !phone || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -41,58 +43,73 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+
+    // Input validation
     if (!email || !password || !role) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Please provide email, password and role",
+      });
     }
 
-    const user = await User.findOne({ email, role });
+    // Find user with case-insensitive email
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${email}$`, "i") },
+      role,
+    });
+
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found with this email and role",
+      });
     }
 
-    //compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
     }
 
-    //Check role
-    if (user.role !== role) {
-      return res.status(400).json({ message: "Invalid Role" });
-    }
-    const tokenData = {
-      userId: user._id,
-    };
-    // Generate JWT token
-    const token = jwt.sign(tokenData, process.env.JWT_SECRET, {
+    // Generate token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
-    const isuser = {
+    // User data to return
+    const userData = {
       _id: user._id,
       name: user.name,
       email: user.email,
       phone: user.phone,
       role: user.role,
+      profile: user.profile,
+      token,
     };
-    //cookie
-    return res
+
+    // Set cookie and send response
+    res
       .status(200)
       .cookie("token", token, {
         maxAge: 24 * 60 * 60 * 1000,
         httpOnly: true,
         sameSite: "strict",
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
       })
       .json({
-        message: `welcome back ${user.name}`,
         success: true,
-        isuser,
-        token,
+        message: `Welcome back ${user.name}`,
+        user: userData,
       });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: err.message });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 };
 
@@ -115,34 +132,30 @@ export const logoutUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { name, email, phone, bio, skills } = req.body;
-
-    // Check if user exists
+    const file = req.file;
+    const fileUri = getDataUri(file);
+    const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
     const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.phone = phone || user.phone;
+    user.profile.bio = bio || user.profile.bio;
+    user.profile.skills = skills ? JSON.parse(skills) : user.profile.skills;
+
+    // If a file is uploaded, update the resume path
+    if (cloudResponse) {
+      user.profile.resume = cloudResponse.secure_url;
+      user.profile.resumeOriginalName = file.originalname;
     }
 
-    // Update basic fields if provided
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (phone) user.phone = phone;
-
-    // Update profile fields if provided
-    if (bio) user.profile.bio = bio;
-    if (skills) user.profile.skills = skills;
-
-    // Save updated user
     await user.save();
 
     res.status(200).json({
       message: "User updated successfully",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        profile: user.profile,
-      },
+      user,
     });
   } catch (err) {
     console.log(err);
