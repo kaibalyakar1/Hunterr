@@ -127,6 +127,7 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
 
   const submitHandler = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     if (!user?._id) {
       Swal.fire({
@@ -134,11 +135,12 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
         text: "User data not available. Please log in again.",
         icon: "error",
       });
+      setLoading(false);
       return;
     }
 
     // Show loading state
-    Swal.fire({
+    const loadingAlert = Swal.fire({
       title: "Updating Profile",
       html: "Please wait...",
       allowOutsideClick: false,
@@ -164,6 +166,15 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
     }
 
     try {
+      console.log("Sending request with data:", {
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        bio: input.bio,
+        skills: skillsArray,
+        hasFile: !!input.file,
+      });
+
       const response = await axios.put(
         `${USER_API_END_POINT}/update/${user._id}`,
         formData,
@@ -176,14 +187,16 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
         }
       );
 
-      if (response.data.user) {
+      console.log("Response received:", response.data);
+
+      if (response.data && response.data.user) {
         const updatedUser = {
           ...response.data.user,
           token: user.token,
         };
         dispatch(setUser(updatedUser));
 
-        // Show success message
+        await loadingAlert.close();
         await Swal.fire({
           title: "Success!",
           text: "Profile updated successfully",
@@ -193,19 +206,31 @@ const UpdateProfileDialog = ({ open, setOpen }) => {
         });
 
         setOpen(false);
+      } else {
+        throw new Error("Invalid response format from server");
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Error updating profile";
+      console.error("Update error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
 
-      // Show error message
-      Swal.fire({
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error updating profile";
+
+      await loadingAlert.close();
+      await Swal.fire({
         title: "Error",
         text: errorMessage,
         icon: "error",
       });
 
       setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 

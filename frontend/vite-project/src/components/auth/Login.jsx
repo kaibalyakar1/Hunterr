@@ -13,6 +13,7 @@ import { Toaster } from "sonner";
 import { setLoading, setUser } from "@/Redux/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { Loader2 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const Login = () => {
   const { loading } = useSelector((state) => state.auth);
@@ -28,17 +29,13 @@ const Login = () => {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
 
-  const chanegFileHandler = (e) => {
-    setInput({ ...input, [e.target.name]: e.target.files[0] });
-  };
-
   const submitHandler = async (e) => {
     e.preventDefault();
-    console.log(input);
     const formData = new FormData();
     formData.append("email", input.email);
     formData.append("password", input.password);
     formData.append("role", input.role);
+
     try {
       dispatch(setLoading(true));
       const res = await axios.post(`${USER_API_END_POINT}/login`, formData, {
@@ -47,14 +44,29 @@ const Login = () => {
         },
         withCredentials: true,
       });
+
       if (res.data.success) {
         dispatch(setUser(res.data.user));
         navigate("/");
-        // Toaster.success(res.data.message);
+        Swal.fire({
+          icon: "success",
+          title: "Login Successful",
+          text: res.data.message || "Welcome back!",
+          showConfirmButton: false,
+          timer: 1500,
+        });
       }
-      console.log(res, "success");
     } catch (error) {
       console.error(error);
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text:
+          error.response?.data?.message ||
+          "An error occurred. Please try again.",
+        showConfirmButton: false,
+        timer: 1500,
+      });
     } finally {
       dispatch(setLoading(false));
     }
@@ -65,7 +77,6 @@ const Login = () => {
       <Navbar />
       <div className="flex items-center justify-center max-w-7xl mx-auto mt-5">
         <form
-          action=""
           onSubmit={submitHandler}
           className="w-1/2 border border-gray-300 p-5 rounded"
         >
@@ -82,6 +93,7 @@ const Login = () => {
               placeholder="Enter your email"
             />
           </div>
+
           <div className="my-2">
             <Label>Password</Label>
             <input
@@ -93,6 +105,7 @@ const Login = () => {
               onChange={changeEventHandler}
             />
           </div>
+
           <div className="mt-5 flex">
             <RadioGroup className="w-full flex items-center gap-5">
               <div className="flex items-center space-x-2">
@@ -127,8 +140,9 @@ const Login = () => {
               <span className="text-blue-500">Signup</span>
             </Link>
           </div>
+
           {loading ? (
-            <Button>
+            <Button disabled>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Please wait
             </Button>
@@ -137,11 +151,6 @@ const Login = () => {
               Login
             </Button>
           )}
-          <div className="mt-5 ">
-            <Button type="submit" className=" text-white p-2 rounded">
-              Login
-            </Button>
-          </div>
         </form>
       </div>
     </div>

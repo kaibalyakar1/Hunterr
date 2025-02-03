@@ -7,10 +7,10 @@ import { RadioGroupItem } from "../ui/radio-group";
 import { Button } from "../ui/button";
 import axios from "axios";
 import { USER_API_END_POINT } from "@/utils/constant";
-import { toast } from "@/hooks/use-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { setLoading } from "@/Redux/authSlice";
 import { Loader2 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const Signup = () => {
   const { loading } = useSelector((state) => state.auth);
@@ -32,13 +32,13 @@ const Signup = () => {
   const chanegFileHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.files[0] });
   };
+
   const submitHandler = async (e) => {
     e.preventDefault();
-    console.log(input);
     const formData = new FormData();
-    formData.append("name", input.name); // Updated key
+    formData.append("name", input.name);
     formData.append("email", input.email);
-    formData.append("phone", input.phone); // Updated key
+    formData.append("phone", input.phone);
     formData.append("password", input.password);
     formData.append("role", input.role);
     if (input.file) formData.append("file", input.file);
@@ -51,14 +51,28 @@ const Signup = () => {
         },
         withCredentials: true,
       });
+
       if (res.status === 200) {
         navigate("/");
-        toast.success("User created successfully");
+        Swal.fire({
+          icon: "success",
+          title: "Signup Successful",
+          text: "User created successfully!",
+          showConfirmButton: false,
+          timer: 1500,
+        });
       }
-
-      console.log(res, "success");
     } catch (error) {
       console.error(error);
+      Swal.fire({
+        icon: "error",
+        title: "Signup Failed",
+        text:
+          error.response?.data?.message ||
+          "An error occurred. Please try again.",
+        showConfirmButton: false,
+        timer: 1500,
+      });
     } finally {
       dispatch(setLoading(false));
     }
@@ -69,7 +83,6 @@ const Signup = () => {
       <Navbar />
       <div className="flex items-center justify-center max-w-7xl mx-auto mt-5">
         <form
-          action=""
           onSubmit={submitHandler}
           className="w-1/2 border border-gray-300 p-5 rounded"
         >
@@ -122,6 +135,7 @@ const Signup = () => {
               placeholder="Enter your password"
             />
           </div>
+
           <div className="mt-5 flex">
             <RadioGroup className="w-full flex items-center gap-5">
               <div className="flex items-center space-x-2">
@@ -148,6 +162,7 @@ const Signup = () => {
                 <Label htmlFor="r3">Employer</Label>
               </div>
             </RadioGroup>
+
             <div className="flex items-center gap-2">
               <Label>Profile</Label>
               <input
@@ -166,9 +181,10 @@ const Signup = () => {
               <span className="text-blue-500">Login</span>
             </Link>
           </div>
-          <div className="mt-5 ">
+
+          <div className="mt-5">
             {loading ? (
-              <Button>
+              <Button disabled>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Please wait
               </Button>

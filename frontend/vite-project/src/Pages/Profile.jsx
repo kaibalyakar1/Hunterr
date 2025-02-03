@@ -33,7 +33,7 @@ const Profile = () => {
         <div className="flex items-center gap-4">
           <Avatar className="h-24 w-24">
             <AvatarImage
-              src="https://github.com/shadcn.png"
+              src={user?.profile?.profileImage || ""}
               alt={user?.name}
               className="rounded-full"
             />
@@ -102,7 +102,8 @@ const Profile = () => {
               href={userResume}
               className="text-blue-500 hover:text-blue-600 hover:underline"
             >
-              View Resume
+              {console.log(userResume)}
+              {user?.profile?.resumeOriginalName}
             </a>
           </div>
         ) : (

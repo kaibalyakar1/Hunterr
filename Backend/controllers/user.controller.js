@@ -11,31 +11,66 @@ dotenv.config();
 export const registerUser = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
-    console.log(req.body);
+
+    // Validate required fields
     if (!name || !email || !phone || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
-    const user = await User.findOne({ email, phone });
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "User already exists with this email or phone" });
     }
 
+    // Handle file upload to Cloudinary (if a file is provided)
+    let profileImage = "";
+    if (req.file) {
+      const fileUri = getDataUri(req.file); // Convert file to data URI
+      const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+        upload_preset: "ml_default", // Your Cloudinary upload preset
+        resource_type: "auto", // Automatically detect resource type (image, video, etc.)
+      });
+      profileImage = cloudResponse.secure_url; // Save the secure URL of the uploaded file
+    }
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new user with profile image (if uploaded)
     const newUser = await User.create({
       name,
       email,
       phone,
       password: hashedPassword,
       role,
+      profile: {
+        profileImage, // Save the Cloudinary URL in the user's profile
+      },
     });
 
+    // Save the user to the database
     await newUser.save();
-    res
-      .status(201)
-      .json({ message: "User created successfully", success: true, newUser });
+
+    // Return success response
+    res.status(201).json({
+      message: "User created successfully",
+      success: true,
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        profile: {
+          profileImage: newUser.profile.profileImage,
+        },
+      },
+    });
   } catch (err) {
-    console.log(err);
+    console.error("Registration error:", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -132,23 +167,30 @@ export const logoutUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { name, email, phone, bio, skills } = req.body;
-    const file = req.file;
-    const fileUri = getDataUri(file);
-    const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
     const user = await User.findById(req.params.id);
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Update basic fields
     user.name = name || user.name;
     user.email = email || user.email;
     user.phone = phone || user.phone;
     user.profile.bio = bio || user.profile.bio;
     user.profile.skills = skills ? JSON.parse(skills) : user.profile.skills;
 
-    // If a file is uploaded, update the resume path
-    if (cloudResponse) {
+    // Only process file if it exists
+    if (req.file) {
+      const fileUri = getDataUri(req.file);
+      const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+        resource_type: "auto",
+        access_mode: "public",
+        folder: "resumes",
+        type: "upload",
+        format: "pdf",
+      });
+      console.log("Cloudinary response:", cloudResponse);
       user.profile.resume = cloudResponse.secure_url;
-      user.profile.resumeOriginalName = file.originalname;
+      user.profile.resumeOriginalName = req.file.originalname;
     }
 
     await user.save();
@@ -158,7 +200,7 @@ export const updateUser = async (req, res) => {
       user,
     });
   } catch (err) {
-    console.log(err);
+    console.error("Update error:", err);
     res.status(500).json({ message: err.message });
   }
 };

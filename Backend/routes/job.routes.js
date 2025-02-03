@@ -6,6 +6,7 @@ import {
   getAdminJobs,
   getJobById,
   deleteJob,
+  updateJob,
 } from "../controllers/job.controller.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get("/getAdminJobs", isAuthenticated, isEmployer, getAdminJobs);
 // Route to get a job by ID (accessible to everyone)
 router.get("/get/:id", getJobById);
 
+router.put("/update/:id", isAuthenticated, isEmployer, updateJob);
 // Route to delete a job (EMPLOYER only)
 router.delete("/delete/:id", isAuthenticated, isEmployer, deleteJob);
 

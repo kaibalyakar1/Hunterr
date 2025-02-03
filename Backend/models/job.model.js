@@ -39,6 +39,9 @@ const jobSchema = new mongoose.Schema({
   jobType: {
     type: String,
   },
+  country: {
+    type: String,
+  },
   noOfpositions: {
     type: Number,
   },

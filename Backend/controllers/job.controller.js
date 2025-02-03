@@ -14,6 +14,7 @@ export const createJob = async (req, res) => {
       noOfpositions,
       jobType,
       requirements,
+      country,
     } = req.body;
     if (
       !title ||
@@ -63,6 +64,7 @@ export const createJob = async (req, res) => {
       noOfpositions,
       jobType,
       requirements,
+      country,
     });
     res.status(201).json({ message: "Job created successfully", job });
   } catch (err) {
@@ -91,9 +93,11 @@ export const getAllJobs = async (req, res) => {
     if (jobsData.length === 0) {
       return res.status(404).json({ message: "No jobs found" });
     }
-    res
-      .status(200)
-      .json({ jobs: jobsData, message: "Jobs fetched successfully" });
+    res.status(200).json({
+      jobs: jobsData,
+      message: "Jobs fetched successfully",
+      success: true,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -106,7 +110,9 @@ export const getJobById = async (req, res) => {
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
-    res.status(200).json({ job, message: "Job fetched successfully" });
+    res
+      .status(200)
+      .json({ job, message: "Job fetched successfully", success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -135,6 +141,21 @@ export const deleteJob = async (req, res) => {
     }
 
     res.status(200).json({ message: "Job deleted successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const updateJob = async (req, res) => {
+  try {
+    const job = await Job.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+    res.status(200).json({ job, message: "Job updated successfully" });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
