@@ -1,17 +1,18 @@
 import Company from "../models/company.model.js";
+import cloudinary from "../utils/cloudinary.js";
+import getDataUri from "../utils/dataUri.js";
 
 //Create Company
 export const createCompany = async (req, res) => {
   try {
     const { name, email, location } = req.body;
-    if (!name || !email || !location) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    console.log(name);
 
-    const company = await Company.findOne({ email, name });
-    if (company) {
-      return res.status(400).json({ message: "Company already exists" });
-    }
+    // const company = await Company.findOne({ name });
+
+    // if (company) {
+    //   return res.status(400).json({ message: "Company already exists" });
+    // }
 
     const newCompany = await Company.create({
       name,
@@ -21,9 +22,11 @@ export const createCompany = async (req, res) => {
     });
 
     await newCompany.save();
-    res
-      .status(201)
-      .json({ message: "Company created successfully", newCompany });
+    res.status(201).json({
+      message: "Company created successfully",
+      newCompany,
+      success: true,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -35,7 +38,7 @@ export const createCompany = async (req, res) => {
 export const getCompany = async (req, res) => {
   try {
     const companies = await Company.find();
-    res.status(200).json(companies);
+    res.status(200).json({ companies, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -76,7 +79,7 @@ export const getCompanyById = async (req, res) => {
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
-    res.status(200).json(company);
+    res.status(200).json({ company, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -87,22 +90,61 @@ export const getCompanyById = async (req, res) => {
 export const updateCompany = async (req, res) => {
   try {
     const { name, email, location, description, website } = req.body;
-    const file = req.file;
-    const company = await Company.findById(req.params.id);
-    if (!company) {
-      return res.status(404).json({ message: "Company not found" });
+    console.log(name, email, location, description, website);
+    // Verify at least one field is being updated
+    // if (!name && !email && !location && !description && !website && !req.file) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Please provide at least one field to update",
+    //   });
+    // }
+
+    // Create an update object with only the provided fields
+    const updateFields = {};
+    if (name) updateFields.name = name;
+    if (email) updateFields.email = email;
+    if (location) updateFields.location = location;
+    if (description) updateFields.description = description;
+    if (website) updateFields.website = website;
+
+    // Handle logo upload if file exists
+    if (req.file) {
+      const fileUri = getDataUri(req.file);
+      const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
+        resource_type: "auto",
+        folder: "company-logos",
+        type: "upload",
+      });
+
+      updateFields.logo = cloudResponse.secure_url;
     }
-    if (name) company.name = name;
-    if (email) company.email = email;
-    if (location) company.location = location;
-    if (description) company.description = description;
-    if (website) company.website = website;
-    // if (logo) company.logo = logo;
-    await company.save();
-    res.status(200).json(company);
+
+    // Update the company using findByIdAndUpdate
+    const updatedCompany = await Company.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCompany) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Company updated successfully",
+      data: updatedCompany,
+    });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: err.message });
+    console.error("Error updating company:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update company",
+      error: err.message,
+    });
   }
 };
 

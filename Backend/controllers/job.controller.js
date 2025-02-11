@@ -9,64 +9,42 @@ export const createJob = async (req, res) => {
       location,
       salary,
       experience,
-      company,
-      email,
+      companyId, // Ensure this matches the frontend payload
       noOfpositions,
       jobType,
       requirements,
-      country,
     } = req.body;
-    if (
-      !title ||
-      !description ||
-      !location ||
-      !salary ||
-      !experience ||
-      !company ||
-      !email ||
-      !noOfpositions ||
-      !jobType ||
-      !requirements
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+
     const userId = req.user._id;
     if (!userId) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const existingJob = await Job.findOne({
-      company,
-      description,
-      location,
-    });
-
-    if (existingJob) {
-      return res.status(409).json({
-        message:
-          "A job with the same company, description, and location already exists",
-      });
-    }
-    const companydet = await Company.findById(company);
-    if (!companydet) {
+    // Check if the company exists
+    const company = await Company.findById(companyId);
+    if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
+
+    // Create the job
     const job = await Job.create({
       title,
       description,
       location,
       salary,
       experience,
-      company,
-      companyName: companydet.name,
-      email,
+      company: companyId, // Use companyId from the request
+      companyName: company.name,
       createdBy: userId,
       noOfpositions,
       jobType,
       requirements,
-      country,
+      postedDate: new Date(),
     });
-    res.status(201).json({ message: "Job created successfully", job });
+
+    res
+      .status(201)
+      .json({ message: "Job created successfully", job, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -106,7 +84,9 @@ export const getAllJobs = async (req, res) => {
 
 export const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findById(req.params.id).populate({
+      path: "applications",
+    });
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -121,14 +101,31 @@ export const getJobById = async (req, res) => {
 
 export const getAdminJobs = async (req, res) => {
   try {
-    const adminId = req.user._id;
-    const jobs = await Job.find({ createdBy: adminId });
-    if (!jobs) {
-      return res.status(404).json({ message: "Job not found" });
+    const adminId = req.user?._id;
+
+    if (!adminId) {
+      console.error("Admin ID is undefined!");
+      return res.status(401).json({ message: "Unauthorized access" });
     }
-    res.status(200).json({ jobs, message: "Jobs fetched successfully" });
+
+    console.log("Fetching jobs for Admin:", adminId);
+
+    const jobs = await Job.find({ createdBy: adminId }).populate("company");
+
+    if (!jobs || jobs.length === 0) {
+      console.warn("No jobs found for Admin:", adminId);
+      return res.status(404).json({ message: "No jobs found" });
+    }
+
+    console.log("Admin Jobs Found:", jobs.length);
+
+    res.status(200).json({
+      success: true,
+      jobs,
+      message: "Jobs fetched successfully",
+    });
   } catch (err) {
-    console.log(err);
+    console.error("Error fetching admin jobs:", err);
     res.status(500).json({ message: err.message });
   }
 };

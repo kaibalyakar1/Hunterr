@@ -5,11 +5,11 @@ import Footer from "../shared/Footer";
 import Navbar from "../shared/Navbar";
 import { useParams } from "react-router-dom";
 import useGetSingleJob from "@/hooks/useGetSingleJob";
-import { JOB_API_END_POINT } from "@/utils/constant";
+import { APPLIED_JOB_API_END_POINT, JOB_API_END_POINT } from "@/utils/constant";
 import axios from "axios";
 import { setError, setLoading, setSingleJob } from "@/Redux/jobSlice";
 import { useDispatch, useSelector } from "react-redux";
-
+import Swal from "sweetalert2";
 const JobDetails = () => {
   const dispatch = useDispatch();
   const params = useParams();
@@ -19,6 +19,31 @@ const JobDetails = () => {
 
   const { user } = useSelector((store) => store.auth);
   const { singleJob } = useSelector((store) => store.job);
+
+  const applyJobHandler = async () => {
+    try {
+      const res = await axios.post(
+        `${APPLIED_JOB_API_END_POINT}/apply/${jobId}`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      if (res.data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Application Submitted!",
+          text: "You have successfully applied for this job.",
+        });
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Application Failed!",
+        text: err.response?.data?.message || "Something went wrong.",
+      });
+    }
+  };
 
   console.log("Current User:", user);
   console.log("Redux Single Job State before Fetching:", singleJob);
@@ -90,11 +115,14 @@ const JobDetails = () => {
             </div>
           </div>
           {/* Apply Button */}
-          {!isApplied && (
-            <Button className="bg-[#6A38C2] hover:bg-[#6A38C2] text-white">
-              Apply Now
-            </Button>
-          )}
+
+          <Button
+            onClick={isApplied ? () => {} : applyJobHandler}
+            disabled={isApplied}
+            className="bg-[#6A38C2] hover:bg-[#6A38C2] text-white"
+          >
+            {isApplied ? "Applied" : "Apply Now"}
+          </Button>
         </div>
 
         {/* Job Description Section */}

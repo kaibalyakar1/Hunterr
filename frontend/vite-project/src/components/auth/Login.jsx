@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../shared/Navbar";
 import { Label } from "../ui/label";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { RadioGroup } from "@radix-ui/react-radio-group";
 import { RadioGroupItem } from "../ui/radio-group";
 import { Button } from "../ui/button";
@@ -44,9 +44,10 @@ const Login = () => {
         },
         withCredentials: true,
       });
-
+      console.log(res.data);
       if (res.data.success) {
         dispatch(setUser(res.data.user));
+        localStorage.setItem("token", res.data.user.token);
         navigate("/");
         Swal.fire({
           icon: "success",

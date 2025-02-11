@@ -39,9 +39,11 @@ export const applyJob = async (req, res) => {
     // Add the new application's ID to the job's applications array
     job.applications.push(newApplication._id);
     await job.save();
-    res
-      .status(201)
-      .json({ message: "Application submitted successfully", newApplication });
+    res.status(201).json({
+      message: "Application submitted successfully",
+      newApplication,
+      success: true,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -142,19 +144,17 @@ export const getApplication = async (req, res) => {
 
 export const getApplicantsByJobId = async (req, res) => {
   try {
-    const { jobId } = req.params.id;
+    const jobId = req.params.id;
     if (!jobId) {
       return res.status(400).json({ message: "Job ID is required" });
     }
-    const applicants = await Application.find({ job: jobId }).populate({
-      path: "applications",
-      options: { sort: { createdAt: -1 } },
-      populate: { path: "applicant", options: { sort: { createdAt: -1 } } },
-    });
+    const applicants = await Application.find({ job: jobId })
+      .populate("job") // Populate job details
+      .populate("applicant");
     if (!applicants || applicants.length === 0) {
       return res.status(404).json({ message: "No applicants found" });
     }
-    res.status(200).json(applicants);
+    res.status(200).json({ applicants, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -177,7 +177,11 @@ export const updateStatus = async (req, res) => {
     await application.save();
     res
       .status(200)
-      .json({ message: "Status updated successfully", application });
+      .json({
+        message: "Status updated successfully",
+        application,
+        success: true,
+      });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
