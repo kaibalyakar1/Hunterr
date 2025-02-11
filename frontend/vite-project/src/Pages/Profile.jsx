@@ -7,8 +7,10 @@ import { Label } from "@radix-ui/react-label";
 import AppliedJobs from "@/components/Profile/AppliedJobs";
 import UpdateProfileDialog from "@/components/Profile/UpdateProfileDialog";
 import { useSelector } from "react-redux";
+import useGetAppliedJobs from "@/hooks/useGetAllAppliedJob";
 
 const Profile = () => {
+  useGetAppliedJobs();
   const { user } = useSelector((state) => state.auth);
   const [open, setOpen] = useState(false);
 

@@ -175,13 +175,11 @@ export const updateStatus = async (req, res) => {
     }
     application.status = status;
     await application.save();
-    res
-      .status(200)
-      .json({
-        message: "Status updated successfully",
-        application,
-        success: true,
-      });
+    res.status(200).json({
+      message: "Status updated successfully",
+      application,
+      success: true,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });
@@ -198,7 +196,7 @@ export const getAllApplication = async (req, res) => {
     if (!applications || applications.length === 0) {
       return res.status(404).json({ message: "No applications found" });
     }
-    res.status(200).json(applications);
+    res.status(200).json({ applications, success: true });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: err.message });

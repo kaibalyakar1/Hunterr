@@ -7,6 +7,7 @@ const initialState = {
   loading: false,
   error: null,
   searchText: "",
+  allAppliedJobs: [],
 };
 
 const jobSlice = createSlice({
@@ -35,6 +36,10 @@ const jobSlice = createSlice({
     setSearchText: (state, action) => {
       state.searchText = action.payload;
     },
+    setAllAppliedJobs: (state, action) => {
+      console.log("Setting all applied jobs:", action.payload);
+      state.allAppliedJobs = action.payload;
+    },
   },
 });
 
@@ -45,6 +50,7 @@ export const {
   setError,
   setSingleJob,
   setSearchText,
+  setAllAppliedJobs,
 } = jobSlice.actions;
 
 export default jobSlice.reducer;
