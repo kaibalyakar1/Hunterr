@@ -1,9 +1,10 @@
 import { useSelector } from "react-redux";
 import LatestJobCards from "./LatestJobCards";
+import { useNavigate } from "react-router-dom";
 
 const LatestJobs = () => {
   const { allJobs, loading, error } = useSelector((store) => store.job);
-
+  const navigate = useNavigate();
   if (loading) {
     return <div>Loading...</div>;
   }

@@ -24,9 +24,9 @@ const CompanySetup = () => {
   const dispatch = useDispatch();
   // Use the custom hook to fetch company data
   const { loading, error } = useGetCompanyById(params.id);
-
+  console.log("loading:", params.id);
   const { singleCompany } = useSelector((store) => store.company);
-
+  console.log("singleCompany:", singleCompany);
   useEffect(() => {
     if (singleCompany && Object.keys(singleCompany).length > 0) {
       setInput({
@@ -76,6 +76,7 @@ const CompanySetup = () => {
           withCredentials: true,
         }
       );
+      console.log("Response received:", res.data);
       if (res.data.success) {
         Swal.fire({
           icon: "success",

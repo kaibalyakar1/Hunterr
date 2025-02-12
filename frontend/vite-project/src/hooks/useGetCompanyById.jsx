@@ -11,6 +11,7 @@ const useGetCompanyById = (companyId) => {
 
   useEffect(() => {
     const fetchSingleCompany = async () => {
+      console.log("Fetching company details for Company ID:", companyId);
       setLoading(true);
       try {
         const res = await axios.get(

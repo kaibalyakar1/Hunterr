@@ -11,6 +11,7 @@ const companySlice = createSlice({
   initialState,
   reducers: {
     setSingleCompany: (state, action) => {
+      console.log("Setting single company:", action.payload);
       state.singleCompany = action.payload;
     },
     setCompanies: (state, action) => {

@@ -75,7 +75,10 @@ export const getCompanyByOwner = async (req, res) => {
 //Get Company by ID
 export const getCompanyById = async (req, res) => {
   try {
-    const company = await Company.findById(req.params.id);
+    console.log("Company ID:", req.params.id);
+    const compaanyId = req.params.id;
+    const company = await Company.findById(compaanyId);
+    console.log("Company:", company);
     if (!company) {
       return res.status(404).json({ message: "Company not found" });
     }
@@ -90,14 +93,14 @@ export const getCompanyById = async (req, res) => {
 export const updateCompany = async (req, res) => {
   try {
     const { name, email, location, description, website } = req.body;
-    console.log(name, email, location, description, website);
+    console.log(req.body);
     // Verify at least one field is being updated
-    // if (!name && !email && !location && !description && !website && !req.file) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Please provide at least one field to update",
-    //   });
-    // }
+    if (!name && !email && !location && !description && !website && !req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide at least one field to update",
+      });
+    }
 
     // Create an update object with only the provided fields
     const updateFields = {};
@@ -109,7 +112,7 @@ export const updateCompany = async (req, res) => {
 
     // Handle logo upload if file exists
     if (req.file) {
-      const fileUri = getDataUri(req.file);
+      const fileUri = getDataUri(req.file); // Ensure this function is defined
       const cloudResponse = await cloudinary.uploader.upload(fileUri.content, {
         resource_type: "auto",
         folder: "company-logos",
@@ -125,7 +128,7 @@ export const updateCompany = async (req, res) => {
       { $set: updateFields },
       { new: true, runValidators: true }
     );
-
+    console.log("Updated Company:", updatedCompany);
     if (!updatedCompany) {
       return res.status(404).json({
         success: false,

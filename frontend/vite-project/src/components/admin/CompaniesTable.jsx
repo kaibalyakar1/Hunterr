@@ -22,6 +22,8 @@ const CompaniesTable = () => {
   );
 
   const filteredCompanies = companies.filter((company) => {
+    console.log("Company Name:", companies);
+
     if (!searchCompanyByText) return true;
     return company?.name
       ?.toLowerCase()
@@ -49,7 +51,7 @@ const CompaniesTable = () => {
         ) : (
           filteredCompanies.map(
             (company) => (
-              console.log("Company:", company),
+              console.log("Company:", companies),
               (
                 <TableRow key={company.id}>
                   <TableCell>
@@ -76,6 +78,7 @@ const CompaniesTable = () => {
                           }
                           className="w-full flex items-center gap-2 px-2 py-1 hover:bg-gray-100 rounded"
                         >
+                          {console.log("Company ID:", company._id)}
                           <Edit2 className="h-4 w-4" />
                           Edit
                         </button>
